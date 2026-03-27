@@ -34,29 +34,34 @@ public class UrlService {
     }
 
     // 🔥 Create short URL
+  
     public String shortenUrl(String longUrl) {
-        UrlMapping url = new UrlMapping();
-        url.setLongUrl(longUrl);
 
-        // first save to get ID
-        repo.save(url);
+    UrlMapping url = new UrlMapping();
+    url.setLongUrl(longUrl);
 
-        // generate short code using ID
-        String shortCode = encode(url.getId());
-        url.setShortCode(shortCode);
+    // ✅ Save to get ID
+    UrlMapping savedUrl = repo.save(url);
 
-        repo.save(url);
+    // ✅ Generate short code from ID
+    String shortCode = encode(savedUrl.getId());
+    savedUrl.setShortCode(shortCode);
 
-        // save in Redis immediately for faster future access
-        try {
-            redisTemplate.opsForValue().set(shortCode, longUrl, CACHE_TIME);
-        } catch (Exception e) {
-            System.out.println("Redis save failed");
-        }
+    // ❌ DO NOT call save again
+    // ❌ repo.save(savedUrl);
+    // ❌ repo.flush();
 
-        return shortCode;
+    // ✅ Redis cache
+    try {
+        redisTemplate.opsForValue().set(shortCode, longUrl, CACHE_TIME);
+    } catch (Exception e) {
+        System.out.println("Redis save failed");
     }
 
+    return shortCode;
+}
+   
+    
    
     public String getLongUrl(String shortCode) {
               System.out.println("🚀 METHOD CALLED with: " + shortCode);
