@@ -10,61 +10,57 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import java.util.Optional;
 
+
 @RestController
-@RequestMapping("/")
+@RequestMapping("")
+@CrossOrigin(origins = "*")
 public class UrlController {
 
     @Autowired
     private UrlService urlService;
+
     @Autowired
     private StringRedisTemplate redisTemplate;
 
     @Autowired
     private UrlRepository repo;
 
-    @GetMapping("/analytics/{shortCode}")
-public String getAnalytics(@PathVariable String shortCode) {
+    // 🔹 Create short URL (FIXED)
+    @PostMapping("/api/shorten")
+    public ResponseEntity<String> shortenUrl(@RequestBody java.util.Map<String, String> request) {
 
-    // 🔥 Step 1: Check Redis
-    String clicks = redisTemplate.opsForValue().get("click:" + shortCode);
-
-    if (clicks != null) {
-        return "Clicks (from Redis): " + clicks;
-    }
-
-    // 🔥 Step 2: Check DB
-    Optional<UrlMapping> url = repo.findByShortCode(shortCode);
-
-    if (url.isPresent()) {
-        return "Clicks (from DB): " + url.get().getClickCount();
-    }
-
-    // 🔥 Step 3: Not found
-    return "URL not found";
-}
-
-    // 🔹 Create short URL
-    @PostMapping("/shorten")
-    public ResponseEntity<String> shortenUrl(@RequestBody String longUrl) {
+        String longUrl = request.get("url");
         String shortCode = urlService.shortenUrl(longUrl);
-        return ResponseEntity.ok(shortCode);
+
+        String shortUrl = "http://localhost:8080/s/" + shortCode;
+
+        return ResponseEntity.ok(shortUrl);
     }
 
-    // 🔹 Get original URL by short code (returns plain URL)
-    @GetMapping("/get/{shortCode}")
-    public ResponseEntity<String> getLongUrl(@PathVariable String shortCode) {
-        String longUrl = urlService.getLongUrl(shortCode);
-        if (longUrl != null) {
-            return ResponseEntity.ok(longUrl);
-        } else {
-            return ResponseEntity.notFound().build();
+    // 🔹 Analytics
+    @GetMapping("/analytics/{shortCode}")
+    public String getAnalytics(@PathVariable String shortCode) {
+
+        String clicks = redisTemplate.opsForValue().get("click:" + shortCode);
+
+        if (clicks != null) {
+            return "Clicks (from Redis): " + clicks;
         }
+
+        Optional<UrlMapping> url = repo.findByShortCode(shortCode);
+
+        if (url.isPresent()) {
+            return "Clicks (from DB): " + url.get().getClickCount();
+        }
+
+        return "URL not found";
     }
 
-    // 🔹 Redirect to original URL (like real URL shortener)
+    // 🔹 Redirect
     @GetMapping("/s/{shortCode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortCode) {
         String longUrl = urlService.getLongUrl(shortCode);
+
         if (longUrl != null) {
             return ResponseEntity.status(302)
                     .header("Location", longUrl)

@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Shortener</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+        #result {
+            margin-top: 15px;
+            word-break: break-all;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>🔗 URL Shortener</h2>
+
+    <input type="text" id="longUrl" placeholder="Paste your long URL here" />
+
+    <br>
+    <button onclick="shortenUrl()">Shorten</button>
+
+    <p id="result"></p>
+</div>
+
+<script>
+async function shortenUrl() {
+    const url = document.getElementById("longUrl").value;
+    const result = document.getElementById("result");
+
+    if (!url) {
+        result.innerText = "Please enter a URL";
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:8080/api/shorten", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url: url })
+        });
+
+        const data = await response.text();
+
+        result.innerHTML = `Short URL: <a href="${data}" target="_blank">${data}</a>`;
+
+    } catch (error) {
+        result.innerText = "Error connecting to backend";
+    }
+}
+</script>
+
+</body>
+</html>
